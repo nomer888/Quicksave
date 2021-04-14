@@ -49,14 +49,14 @@ function Collection:_closeActiveDocuments()
 	local promises = {}
 	for documentName, document in pairs(self._activeDocuments) do
 		if document:isClosed() then
-			promises[documentName] = Promise.new(function(resolve)
+			table.insert(promises, Promise.new(function(resolve)
 				while self._activeDocuments[documentName] ~= nil do
 					Promise.delay(0):await()
 				end
 				resolve()
-			end)
+			end))
 		else
-			promises[documentName] = document:close()
+			table.insert(promises, document:close())
 		end
 	end
 	return Promise.allSettled(promises)
@@ -106,7 +106,7 @@ function Collection:_connectPlayerRemoving()
 		end
 
 		local name = "player-" .. player.UserId
-		local document = self:getDocument(name)
+		local document = self:getDocument(name):expect()
 		if not document:isClosed() then
 			document:close()
 		end
@@ -116,7 +116,7 @@ function Collection:_connectPlayerRemoving()
 end
 
 function Collection:getDocumentForPlayer(player)
-	stackSkipAssert(Players:FindFirstChild(player), "Player not in-game")
+	stackSkipAssert(player:IsDescendantOf(game), "Player not in-game")
 
 	self:_connectPlayerRemoving()
 

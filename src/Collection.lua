@@ -76,14 +76,17 @@ function Collection:getDocument(name)
 	end
 
 	return delayPromise:andThen(function()
-		if self._activeDocuments[name] == nil then
-			self._activeDocuments[name] = Document.new(self, name)
-			self._activeDocuments[name]:readyPromise():catch(function()
+		local document = self._activeDocuments[name]
+
+		if document == nil then
+			document = Document.new(self, name)
+			self._activeDocuments[name] = document
+			document:readyPromise():catch(function()
 				self._activeDocuments[name] = nil
 			end)
 		end
 
-		return self._activeDocuments[name]:readyPromise()
+		return document:readyPromise()
 	end)
 end
 

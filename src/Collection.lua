@@ -25,7 +25,7 @@ function Collection.new(name, options)
 		), 2)
 	end
 
-	return setmetatable({
+	local self = setmetatable({
 		name = name;
 		schema = options.schema;
 		runSchema = runSchema;
@@ -34,6 +34,16 @@ function Collection.new(name, options)
 		_activeDocuments = {};
 		_justClosedDocuments = {};
 	}, Collection)
+
+	game:BindToClose(function()
+		local promises = {}
+		for documentName, document in pairs(self._activeDocuments) do
+			promises[documentName] = document:close()
+		end
+		Promise.allSettled(promises):await()
+	end)
+
+	return self
 end
 
 function Collection:getDocument(name)

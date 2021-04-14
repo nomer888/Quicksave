@@ -61,6 +61,7 @@ end
 function Collection:getDocument(name)
 	name = tostring(name)
 
+	local delayPromise = Promise.resolve()
 	if self._justClosedDocuments[name] then
 		local waitTime = DOCUMENT_COOLDOWN - (getTime() - self._justClosedDocuments[name])
 
@@ -70,21 +71,23 @@ function Collection:getDocument(name)
 				self.name,
 				waitTime
 			))
-			Promise.delay(waitTime):await() -- todo:  yields
+			delayPromise = Promise.delay(waitTime)
 		end
 	end
 
-	if self._activeDocuments[name] == nil then
-		self._activeDocuments[name] = Document.new(self, name)
-	end
+	return delayPromise:andThen(function()
+		if self._activeDocuments[name] == nil then
+			self._activeDocuments[name] = Document.new(self, name)
+		end
 
-	local promise = self._activeDocuments[name]:readyPromise()
+		local promise = self._activeDocuments[name]:readyPromise()
 
-	promise:catch(function()
-		self._activeDocuments[name] = nil
+		promise:catch(function()
+			self._activeDocuments[name] = nil
+		end)
+
+		return promise
 	end)
-
-	return promise
 end
 
 function Collection:_connectPlayerRemoving()

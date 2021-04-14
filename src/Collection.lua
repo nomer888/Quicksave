@@ -1,3 +1,5 @@
+local Players = game:GetService("Players")
+
 local Promise = require(script.Parent.Parent.Promise)
 local t = require(script.Parent.Parent.t)
 local Document = require(script.Parent.Document)
@@ -33,6 +35,7 @@ function Collection.new(name, options)
 		_migrations = options.migrations or {};
 		_activeDocuments = {};
 		_justClosedDocuments = {};
+		_activePlayers = {};
 	}, Collection)
 
 	game:BindToClose(function()
@@ -82,6 +85,42 @@ function Collection:getDocument(name)
 	end)
 
 	return promise
+end
+
+function Collection:_connectPlayerRemoving()
+	if self._listeningPlayerRemoving then
+		return
+	end
+
+	self._listeningPlayerRemoving = true
+	Players.PlayerRemoving:Connect(function(player)
+		if not self._activePlayers[player] then
+			return
+		end
+
+		local name = "player-" .. player.UserId
+		local document = self:getDocument(name)
+		if not document:isClosed() then
+			document:close()
+		end
+
+		self._activePlayers[player] = nil
+	end)
+end
+
+function Collection:getDocumentForPlayer(player)
+	stackSkipAssert(Players:FindFirstChild(player), "Player not in-game")
+
+	self:_connectPlayerRemoving()
+
+	local name = "player-" .. player.UserId
+	local documentPromise = self:getDocument(name)
+
+	if not self._activePlayers[player] then
+		self._activePlayers[player] = true
+	end
+
+	return documentPromise
 end
 
 function Collection:getLatestMigrationVersion()

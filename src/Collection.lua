@@ -38,7 +38,16 @@ function Collection.new(name, options)
 	game:BindToClose(function()
 		local promises = {}
 		for documentName, document in pairs(self._activeDocuments) do
-			promises[documentName] = document:close()
+			if document:isClosed() then
+				promises[documentName] = Promise.new(function(resolve)
+					while self._activeDocuments[documentName] ~= nil do
+						Promise.delay(0):await()
+					end
+					resolve()
+				end)
+			else
+				promises[documentName] = document:close()
+			end
 		end
 		Promise.allSettled(promises):await()
 	end)

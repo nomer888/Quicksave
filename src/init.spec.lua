@@ -99,6 +99,16 @@ return function()
 
 			expect(collection:getDocument("foobar"):expect()).to.equal(document)
 		end)
+
+		it("should be able to close all active documents", function()
+			local collection = Quicksave.getCollection("collectionName")
+
+			local document = collection:getDocument("baz"):expect()
+
+			collection:_closeActiveDocuments():expect()
+
+			expect(document:isClosed()).to.equal(true)
+		end)
 	end)
 
 	describe("Document", function()

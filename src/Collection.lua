@@ -39,23 +39,27 @@ function Collection.new(name, options)
 	}, Collection)
 
 	game:BindToClose(function()
-		local promises = {}
-		for documentName, document in pairs(self._activeDocuments) do
-			if document:isClosed() then
-				promises[documentName] = Promise.new(function(resolve)
-					while self._activeDocuments[documentName] ~= nil do
-						Promise.delay(0):await()
-					end
-					resolve()
-				end)
-			else
-				promises[documentName] = document:close()
-			end
-		end
-		Promise.allSettled(promises):await()
+		self:_closeActiveDocuments():await()
 	end)
 
 	return self
+end
+
+function Collection:_closeActiveDocuments()
+	local promises = {}
+	for documentName, document in pairs(self._activeDocuments) do
+		if document:isClosed() then
+			promises[documentName] = Promise.new(function(resolve)
+				while self._activeDocuments[documentName] ~= nil do
+					Promise.delay(0):await()
+				end
+				resolve()
+			end)
+		else
+			promises[documentName] = document:close()
+		end
+	end
+	return Promise.allSettled(promises)
 end
 
 function Collection:getDocument(name)

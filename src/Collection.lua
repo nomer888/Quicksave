@@ -36,6 +36,7 @@ function Collection.new(name, options)
 		_activeDocuments = {};
 		_justClosedDocuments = {};
 		_activePlayers = {};
+		_playerRemovingCallbacks = options.playerRemovingCallbacks or {};
 	}, Collection)
 
 	game:BindToClose(function()
@@ -103,6 +104,10 @@ function Collection:_connectPlayerRemoving()
 	Players.PlayerRemoving:Connect(function(player)
 		if not self._activePlayers[player] then
 			return
+		end
+
+		for _, callback in ipairs(self._playerRemovingCallbacks) do
+			callback(player)
 		end
 
 		local name = "player-" .. player.UserId

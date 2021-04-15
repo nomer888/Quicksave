@@ -106,12 +106,13 @@ function Collection:_connectPlayerRemoving()
 			return
 		end
 
-		for _, callback in ipairs(self._playerRemovingCallbacks) do
-			callback(player)
-		end
-
 		local name = "player-" .. player.UserId
 		local document = self:getDocument(name):expect()
+
+		for _, callback in ipairs(self._playerRemovingCallbacks) do
+			callback(document, player)
+		end
+
 		if not document:isClosed() then
 			document:close()
 		end
